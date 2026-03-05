@@ -153,7 +153,6 @@ function setupTeamFilter() {
   const teams = [...new Set(allWomen.map((w) => w.team).filter(Boolean))].sort();
   if (teams.length === 0) return;
 
-  teamFilter.hidden = false;
   teams.forEach((t) => {
     const opt = document.createElement('option');
     opt.value = t;
