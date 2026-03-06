@@ -1,23 +1,31 @@
 /* ──────────────────────────────────────────────────────────
    CONFIGURATION — Replace these two values with your own
    ────────────────────────────────────────────────────────── */
-const FORM_BASE_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScu22zeFoxvFXUr7r0SvDOKauAYb7Stu0YwpnS0qi4YIIYAXg/viewform?usp=header';   // e.g. "https://docs.google.com/forms/d/e/XXXXX/viewform"
-const ENTRY_ID      = '713405156';         // e.g. "1234567890"
+const FORM_BASE_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScu22zeFoxvFXUr7r0SvDOKauAYb7Stu0YwpnS0qi4YIIYAXg/viewform';
+const ENTRY_ID      = '674451367';         // e.g. "1234567890"
 /* ────────────────────────────────────────────────────────── */
 
-const GRADIENTS = 8; // number of .grad-N classes in CSS
+const GRADIENTS = 8;
 
-const grid        = document.getElementById('card-grid');
-const searchInput = document.getElementById('search');
-const teamFilter  = document.getElementById('team-filter');
-const toastBox    = document.getElementById('toast-container');
+const grid         = document.getElementById('card-grid');
+const searchInput  = document.getElementById('search');
+const teamFilter   = document.getElementById('team-filter');
+const toastBox     = document.getElementById('toast-container');
+const floatBtn     = document.getElementById('float-btn');
+const floatCount   = document.getElementById('float-btn-count');
+const btnSelectAll = document.getElementById('btn-select-all');
+const btnClearAll  = document.getElementById('btn-clear-all');
 
 let allWomen = [];
+const selectedNames = new Set();
 
-// Clipboard SVG icon (inline to avoid external dependencies)
 const COPY_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+const CHECK_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="20 6 9 17 4 12"/></svg>`;
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
@@ -37,6 +45,11 @@ function buildFormURL(name) {
   return `${FORM_BASE_URL}?usp=pp_url&entry.${ENTRY_ID}=${encodeURIComponent(name)}`;
 }
 
+function buildMultiFormURL(names) {
+  const params = names.map(n => `entry.${ENTRY_ID}=${encodeURIComponent(n)}`).join('&');
+  return `${FORM_BASE_URL}?usp=pp_url&${params}`;
+}
+
 /* ── Toast ────────────────────────────────────────────────── */
 
 function showToast(msg) {
@@ -47,27 +60,62 @@ function showToast(msg) {
   setTimeout(() => el.remove(), 2200);
 }
 
+/* ── Selection state ─────────────────────────────────────── */
+
+function updateFloatingBtn() {
+  const count = selectedNames.size;
+  floatCount.textContent = count;
+  if (count > 0) {
+    floatBtn.classList.add('visible');
+    document.body.classList.add('has-selection');
+  } else {
+    floatBtn.classList.remove('visible');
+    document.body.classList.remove('has-selection');
+  }
+}
+
+function toggleCard(name, cardEl) {
+  if (selectedNames.has(name)) {
+    selectedNames.delete(name);
+    cardEl.classList.remove('selected');
+    cardEl.setAttribute('aria-checked', 'false');
+  } else {
+    selectedNames.add(name);
+    cardEl.classList.add('selected');
+    cardEl.setAttribute('aria-checked', 'true');
+  }
+  updateFloatingBtn();
+}
+
 /* ── Card rendering ──────────────────────────────────────── */
 
 function createCard(woman) {
-  const url = buildFormURL(woman.name);
+  const singleUrl = buildFormURL(woman.name);
 
-  const card = document.createElement('a');
+  const card = document.createElement('div');
   card.className = 'card';
-  card.href = url;
-  card.target = '_blank';
-  card.rel = 'noopener noreferrer';
-  card.setAttribute('aria-label', `Appreciate ${woman.name}`);
+  card.dataset.name = woman.name;
+  card.setAttribute('role', 'checkbox');
+  card.setAttribute('tabindex', '0');
+  card.setAttribute('aria-checked', selectedNames.has(woman.name) ? 'true' : 'false');
+  card.setAttribute('aria-label', `Select ${woman.name} for appreciation`);
 
-  // Copy-link button
+  if (selectedNames.has(woman.name)) card.classList.add('selected');
+
+  // Check overlay (top-left)
+  const checkOverlay = document.createElement('div');
+  checkOverlay.className = 'check-overlay';
+  checkOverlay.innerHTML = CHECK_ICON;
+  card.appendChild(checkOverlay);
+
+  // Copy-link button (top-right)
   const copyBtn = document.createElement('button');
   copyBtn.className = 'copy-btn';
   copyBtn.setAttribute('aria-label', `Copy appreciation link for ${woman.name}`);
   copyBtn.innerHTML = COPY_ICON;
   copyBtn.addEventListener('click', (e) => {
-    e.preventDefault();
     e.stopPropagation();
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText(singleUrl).then(() => {
       showToast('Link copied!');
     }).catch(() => {
       showToast('Could not copy link');
@@ -92,7 +140,6 @@ function createCard(woman) {
   } else {
     avatarWrap.appendChild(makeInitialsEl(woman.name));
   }
-
   card.appendChild(avatarWrap);
 
   // Name
@@ -108,6 +155,14 @@ function createCard(woman) {
     teamEl.textContent = woman.team;
     card.appendChild(teamEl);
   }
+
+  card.addEventListener('click', () => toggleCard(woman.name, card));
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleCard(woman.name, card);
+    }
+  });
 
   return card;
 }
@@ -160,6 +215,37 @@ function setupTeamFilter() {
     teamFilter.appendChild(opt);
   });
 }
+
+/* ── Select All / Clear All ──────────────────────────────── */
+
+btnSelectAll.addEventListener('click', () => {
+  grid.querySelectorAll('.card').forEach((cardEl) => {
+    const name = cardEl.dataset.name;
+    if (name) {
+      selectedNames.add(name);
+      cardEl.classList.add('selected');
+      cardEl.setAttribute('aria-checked', 'true');
+    }
+  });
+  updateFloatingBtn();
+});
+
+btnClearAll.addEventListener('click', () => {
+  selectedNames.clear();
+  grid.querySelectorAll('.card').forEach((cardEl) => {
+    cardEl.classList.remove('selected');
+    cardEl.setAttribute('aria-checked', 'false');
+  });
+  updateFloatingBtn();
+});
+
+/* ── Floating appreciate button ──────────────────────────── */
+
+floatBtn.addEventListener('click', () => {
+  if (selectedNames.size === 0) return;
+  const url = buildMultiFormURL([...selectedNames]);
+  window.open(url, '_blank', 'noopener,noreferrer');
+});
 
 /* ── Init ─────────────────────────────────────────────────── */
 
