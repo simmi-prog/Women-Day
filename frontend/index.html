@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Give to Gain — Women's Day Appreciation</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💐</text></svg>" />
+</head>
+<body>
+
+  <header class="site-header">
+    <h1 class="header-emoji">International Women's Day 🌸</h1>
+    <p class="subtitle">Choose a woman who deserves her flowers 💐 and write her a quick appreciation note.
+      Let her know why she's amazing — HYPE HER UP!</p>
+  </header>
+
+  <div class="controls">
+    <input
+      type="text"
+      id="search"
+      placeholder="Search by name…"
+      aria-label="Search by name"
+    />
+    <select id="team-filter" aria-label="Filter by team" hidden style="display:none !important;">
+      <option value="">All Teams</option>
+    </select>
+    <div class="select-actions">
+      <button class="btn-select btn-select-all" id="btn-select-all">✅ Select All</button>
+      <button class="btn-select btn-clear-all" id="btn-clear-all">✖ Clear All</button>
+    </div>
+  </div>
+
+  <main class="grid-container">
+    <div class="card-grid" id="card-grid"></div>
+  </main>
+
+  <footer class="site-footer">
+    Your appreciation will be printed and shared. 💜
+    <span class="copyright">© Simmi Thapad</span>
+  </footer>
+
+  <button class="float-btn" id="float-btn" aria-label="Appreciate selected women">
+    💌 Appreciate <span class="float-btn-count" id="float-btn-count">0</span> queens
+  </button>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
