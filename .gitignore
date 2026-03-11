@@ -1,0 +1,6 @@
+output_pdfs/
+responses.csv
+assets/bouquet_clean.png
+__pycache__/
+*.pyc
+*.pyo
